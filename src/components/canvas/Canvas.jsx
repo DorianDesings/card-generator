@@ -1,17 +1,24 @@
 import { useEffect, useRef } from 'react';
 import { BG_CARDS, FRAME_CARDS, TITLE_BG_CARDS } from '../../constants/bgCards';
-import { CARD_HEIGHT, CARD_WIDTH } from '../../constants/card-values';
+import {
+	CARD_HEIGHT,
+	CARD_WIDTH,
+	INITIAL_MANA_X,
+	INTIAL_MANA_Y,
+	MANA_HEIGHT,
+	MANA_WIDTH,
+	SPACE_BETWEEN_MANA
+} from '../../constants/card-values';
+import { MANA_SYMBOLS, MANA_TYPES } from '../../constants/manaTypes';
 
 const Canvas = ({ cardInfo }) => {
-	console.log(cardInfo);
 	const canvasRef = useRef(null);
-	// Tamaño del rectángulo y el radio de las esquinas
+	console.log(cardInfo);
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		const context = canvas.getContext('2d');
-		// Dibujar el cuadrado con bordes redondeados nuevamente para que quede por debajo de la imagen
-
+		drawCardName(context, cardInfo);
 		loadImages(context, cardInfo);
 	}, [cardInfo]);
 
@@ -36,6 +43,51 @@ const drawCardName = (context, cardInfo) => {
 	context.fillText(text, textX, textY);
 };
 
+const drawCardMana = async (context, cardInfo) => {
+	const { mana: manaInfo } = cardInfo;
+	drawCardName(context, cardInfo);
+	const desiredOrder = ['C', 'W', 'U', 'B', 'R', 'G'].reverse();
+
+	// Función para cargar una imagen de maná
+	const loadImage = color => {
+		return new Promise(resolve => {
+			const manaImage = new Image();
+			if (color === 'C') {
+				manaImage.src = MANA_SYMBOLS.colorless[manaInfo.colorless];
+			} else {
+				manaImage.src = MANA_SYMBOLS[color]; // Ruta de la imagen de maná correspondiente
+			}
+
+			manaImage.onload = () => {
+				resolve(manaImage);
+			};
+		});
+	};
+
+	let x = INITIAL_MANA_X;
+
+	for (const color of desiredOrder) {
+		const manaColor = MANA_TYPES.find(mana => mana.symbol === color);
+		const count = manaInfo[manaColor.name] || 0;
+
+		if (manaColor.name === 'colorless') {
+			const image = await loadImage(color);
+			context.drawImage(image, x, INTIAL_MANA_Y, MANA_WIDTH, MANA_HEIGHT);
+		} else {
+			// Cargar y mostrar la cantidad correspondiente de imágenes de maná
+			for (let i = 0; i < count; i++) {
+				const image = await loadImage(color);
+
+				// Dibuja el símbolo de maná en la posición actual
+				context.drawImage(image, x, INTIAL_MANA_Y, MANA_WIDTH, MANA_HEIGHT);
+
+				// Actualiza la posición horizontal para el siguiente símbolo de maná
+				x -= MANA_WIDTH + SPACE_BETWEEN_MANA;
+			}
+		}
+	}
+};
+
 const drawTitleBackground = (context, cardInfo) => {
 	const { cardColor } = cardInfo;
 	const titleBgCard = new Image();
@@ -54,13 +106,12 @@ const drawTitleBackground = (context, cardInfo) => {
 			titleBgCardHeight
 		);
 
-		drawCardName(context, cardInfo);
+		drawCardMana(context, cardInfo);
 	};
 };
 
 const drawFrame = (context, cardInfo) => {
 	const { cardColor } = cardInfo;
-	console.log(cardColor);
 	const frameCard = new Image();
 	const frameCardX = (CARD_WIDTH - 295) / 2; // Centrado horizontalmente
 	const frameCardY = (CARD_HEIGHT - 400) / 2; // Centrado verticalmente
@@ -123,5 +174,6 @@ const drawCardBackground = (context, cardInfo) => {
 };
 
 const loadImages = (context, cardInfo) => {
+	// context.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 	drawCardBackground(context, cardInfo);
 };
