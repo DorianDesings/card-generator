@@ -1,3 +1,7 @@
+@font-face {
+	font-family: 'beleren';
+	src: url('/fonts/typeface-beleren-bold-master/Beleren2016-Bold.woff');
+}
 body {
-	font-family: sans-serif;
+	font-family: 'beleren';
 }
